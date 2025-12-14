@@ -13,8 +13,16 @@
         input, textarea { width: 100%; padding: 0.5rem; box-sizing: border-box; }
         button { background: #24292e; color: white; border: none; padding: 0.75rem 1.5rem; cursor: pointer; font-size: 1rem; border-radius: 4px; }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
+        button.secondary { background: #f6f8fa; color: #24292e; border: 1px solid #d1d5da; }
         #login-screen { max-width: 400px; margin: 4rem auto; text-align: center; }
         .error { color: red; margin-top: 0.5rem; }
+        
+        /* List Styles */
+        .post-list { list-style: none; padding: 0; }
+        .post-item { border: 1px solid #e1e4e8; padding: 1rem; margin-bottom: 0.5rem; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
+        .post-item:hover { background: #f6f8fa; }
+        .post-title { font-weight: bold; }
+        .post-actions button { padding: 0.25rem 0.5rem; font-size: 0.875rem; margin-left: 0.5rem; }
     </style>
 </head>
 <body>
@@ -29,9 +37,23 @@
         <p id="login-error" class="error"></p>
     </div>
 
+    <!-- Dashboard Screen (List Posts) -->
+    <div id="dashboard-screen" class="hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h1>Posts</h1>
+            <button onclick="showEditor()">+ New Post</button>
+        </div>
+        <ul id="post-list" class="post-list">
+            <li>Loading posts...</li>
+        </ul>
+    </div>
+
     <!-- Editor Screen -->
     <div id="editor-screen" class="hidden">
-        <h1>Write a New Post</h1>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h1 id="editor-title">Write a New Post</h1>
+            <button class="secondary" onclick="showDashboard()">Cancel</button>
+        </div>
         
         <div class="form-group">
             <label>Title</label>
@@ -49,10 +71,12 @@
 
     <script src="https://cdn.jsdelivr.net/npm/simplemde@1.11.2/dist/simplemde.min.js"></script>
     <script type="module">
-        import { config } from './config.js';
+        import { config } from './cms_config.js';
 
         let githubToken = null;
         let simplemde = null;
+        let currentFileSha = null; // To track if we are updating an existing file
+        let currentFilePath = null;
 
         // Repo Details
         const REPO_OWNER = 'lucaa2000';
@@ -85,16 +109,106 @@
 
                 githubToken = new TextDecoder().decode(decrypted);
                 
-                // If successful, show editor
+                // If successful, show dashboard
                 document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('editor-screen').classList.remove('hidden');
-                
-                // Init Markdown Editor
-                simplemde = new SimpleMDE({ element: document.getElementById("post-body") });
+                showDashboard();
 
             } catch (e) {
                 console.error(e);
                 errorMsg.innerText = "Incorrect password or invalid configuration.";
+            }
+        };
+
+        window.showDashboard = async function() {
+            document.getElementById('editor-screen').classList.add('hidden');
+            document.getElementById('dashboard-screen').classList.remove('hidden');
+            
+            const list = document.getElementById('post-list');
+            list.innerHTML = '<li>Loading posts...</li>';
+
+            try {
+                const response = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/_posts`, {
+                    headers: { 'Authorization': `Bearer ${githubToken}` }
+                });
+                const files = await response.json();
+                
+                // Filter for markdown files and sort by name (date) descending
+                const posts = files
+                    .filter(f => f.name.endsWith('.md'))
+                    .sort((a, b) => b.name.localeCompare(a.name));
+
+                list.innerHTML = posts.map(post => `
+                    <li class="post-item">
+                        <span class="post-title">${post.name}</span>
+                        <div class="post-actions">
+                            <button class="secondary" onclick="editPost('${post.path}', '${post.sha}')">Edit</button>
+                        </div>
+                    </li>
+                `).join('');
+
+            } catch (e) {
+                list.innerHTML = `<li style="color:red">Error loading posts: ${e.message}</li>`;
+            }
+        };
+
+        window.showEditor = function() {
+            document.getElementById('dashboard-screen').classList.add('hidden');
+            document.getElementById('editor-screen').classList.remove('hidden');
+            
+            // Reset Editor
+            document.getElementById('editor-title').innerText = "Write a New Post";
+            document.getElementById('post-title').value = "";
+            document.getElementById('status-msg').innerText = "";
+            document.getElementById('publish-btn').disabled = false;
+            
+            currentFileSha = null;
+            currentFilePath = null;
+
+            if (!simplemde) {
+                simplemde = new SimpleMDE({ element: document.getElementById("post-body") });
+            }
+            simplemde.value("");
+        };
+
+        window.editPost = async function(path, sha) {
+            document.getElementById('dashboard-screen').classList.add('hidden');
+            document.getElementById('editor-screen').classList.remove('hidden');
+            document.getElementById('editor-title').innerText = "Edit Post";
+            document.getElementById('status-msg').innerText = "Loading content...";
+            
+            currentFilePath = path;
+            currentFileSha = sha;
+
+            if (!simplemde) {
+                simplemde = new SimpleMDE({ element: document.getElementById("post-body") });
+            }
+
+            try {
+                const response = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`, {
+                    headers: { 'Authorization': `Bearer ${githubToken}` }
+                });
+                const data = await response.json();
+                const content = decodeURIComponent(escape(atob(data.content))); // Handle UTF-8 properly
+
+                // Parse Frontmatter to get Title
+                const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+                if (match) {
+                    const frontmatter = match[1];
+                    const body = match[2];
+                    
+                    const titleMatch = frontmatter.match(/title:\s*"(.*)"/) || frontmatter.match(/title:\s*(.*)/);
+                    if (titleMatch) {
+                        document.getElementById('post-title').value = titleMatch[1];
+                    }
+                    simplemde.value(body.trim());
+                } else {
+                    simplemde.value(content);
+                }
+                document.getElementById('status-msg').innerText = "";
+
+            } catch (e) {
+                alert("Error loading post: " + e.message);
+                showDashboard();
             }
         };
 
@@ -112,23 +226,40 @@
             btn.disabled = true;
             status.innerText = "Publishing...";
 
-            // Create filename slug
-            const date = new Date();
-            const dateStr = date.toISOString().split('T')[0];
-            const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-            const filename = `_posts/${dateStr}-${slug}.md`;
+            let filename = currentFilePath;
+            
+            // If new post, generate filename
+            if (!filename) {
+                const date = new Date();
+                const dateStr = date.toISOString().split('T')[0];
+                const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                filename = `_posts/${dateStr}-${slug}.md`;
+            }
 
             // Create Frontmatter
+            // Note: We are simplifying here. Real frontmatter parsing/preserving is harder.
+            // For editing, we might overwrite other frontmatter fields if we aren't careful.
+            // For now, we just recreate standard frontmatter.
+            const date = new Date().toISOString();
             const fileContent = `---
 layout: post
 title: "${title.replace(/"/g, '\\"')}"
-date: ${date.toISOString()}
+date: ${date}
 ---
 
 ${body}`;
 
             // Base64 encode (handle unicode)
             const contentEncoded = btoa(unescape(encodeURIComponent(fileContent)));
+
+            const payload = {
+                message: currentFileSha ? `Update post: ${title}` : `New post: ${title}`,
+                content: contentEncoded
+            };
+
+            if (currentFileSha) {
+                payload.sha = currentFileSha;
+            }
 
             try {
                 const response = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${filename}`, {
@@ -137,18 +268,28 @@ ${body}`;
                         'Authorization': `Bearer ${githubToken}`,
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        message: `New post: ${title}`,
-                        content: contentEncoded
-                    })
+                    body: JSON.stringify(payload)
                 });
 
                 if (response.ok) {
                     status.innerText = "Success! Post published.";
                     status.style.color = "green";
                     setTimeout(() => {
-                        window.location.reload();
-                    }, 2000);
+                        showDashboard();
+                    }, 1500);
+                } else {
+                    const err = await response.json();
+                    throw new Error(err.message);
+                }
+            } catch (e) {
+                status.innerText = "Error: " + e.message;
+                status.style.color = "red";
+                btn.disabled = false;
+            }
+        };
+    </script>
+</body>
+</html>                    }, 2000);
                 } else {
                     const err = await response.json();
                     throw new Error(err.message);
