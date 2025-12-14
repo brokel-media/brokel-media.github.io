@@ -1,8 +1,12 @@
 ---
 # the default layout is 'page'
 icon: fas fa-info-circle
-order: 4
+order: 6
+
 ---
 
-> Add Markdown syntax content to file `_tabs/about.md`{: .filepath } and it will show up on this page.
-{: .prompt-tip }
+I'm Luca, a Scientific Computing M.Sc. student at Technical University Berlin with a passion for mathematics and software development.
+
+Welcome to my personal corner of the web. I'm still figuring out what this space will become—consider it a work in progress. Stay tuned!
+
+For now I want friends to be able to contribute.
