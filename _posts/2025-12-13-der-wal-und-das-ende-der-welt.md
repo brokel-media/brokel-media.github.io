@@ -3,7 +3,7 @@ layout: post
 title: "Der Wal und das Ende der Welt"
 date: 2025-12-14 21:09 +0100
 categories: [books]
-tags: [book, de]
+tags: [book, german]
 author: ["Luca"]
 ---
 
