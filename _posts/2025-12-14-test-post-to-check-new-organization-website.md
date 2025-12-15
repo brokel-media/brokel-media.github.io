@@ -2,6 +2,7 @@
 layout: post
 title: "Test post to check new organization website"
 date: 2025-12-14T23:56:42.738Z
+author: ["lucaa2000"]
 ---
 
 Hello and welcome to the website we own together! Have fun :)
@@ -22,3 +23,7 @@ Hello and welcome to the website we own together! Have fun :)
 ⠀⠀⠀⠀⠀⠀⠛⠻⠿⣿⣿⣿⠀⢸⡇⠀⣿⣿⣿⠿⠟⠛⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ```
+
+This is a test to check if I can add local pictures.
+
+![brokel-media.png](/assets/img/uploads/1765805327998-brokel-media.png)
