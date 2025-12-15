@@ -4,6 +4,7 @@ title: "Building a Password-Protected Editor for a Static Site"
 date: 2025-12-14 12:00 +0100
 categories: [Tech, Web Development]
 tags: [jekyll, github-pages, cryptography]
+author: ["Luca", "Github Copilot"]
 ---
 
 I recently added a feature to this blog that allows my friends to contribute posts directly, without needing to know how to use Git or Markdown. I wanted something simple: a password-protected page where they could just write and publish.
