@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>New Post</title>
+    <title>Contribute</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simplemde@1.11.2/dist/simplemde.min.css">
     <style>
         body { font-family: system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; }
@@ -23,6 +23,7 @@
     <div id="login-screen">
         <h1>Contributor Login</h1>
         <div class="form-group">
+            <input type="text" id="username-input" placeholder="GitHub Username" style="margin-bottom: 1rem;">
             <input type="password" id="password-input" placeholder="Enter the password" onkeyup="if(event.key === 'Enter') login()">
         </div>
         <button onclick="login()">Unlock</button>
@@ -63,8 +64,10 @@
         </div>
 
         <div class="form-group">
-            <label>Your Name (Author) *</label>
-            <input type="text" id="post-author" placeholder="Enter your name">
+            <label>
+                <input type="checkbox" id="post-collaborative" style="width: auto;">
+                Allow other authors to edit this post
+            </label>
         </div>
 
         <div class="form-group">
@@ -86,6 +89,7 @@
         let currentPath = null;
         let currentDate = null;
         let currentAuthors = [];
+        let loggedInAuthorName = null;
 
         // Repo Details
         // TODO: put these consts in a central file
@@ -93,9 +97,15 @@
         const REPO_NAME = 'brokel-media.github.io';
 
         window.login = async function() {
+            const username = document.getElementById('username-input').value.trim();
             const password = document.getElementById('password-input').value;
             const errorMsg = document.getElementById('login-error');
             
+            if (!username) {
+                errorMsg.innerText = "Please enter your GitHub username.";
+                return;
+            }
+
             try {
                 if (config.data.length === 0) {
                     throw new Error("Configuration not found. Please run setup.html first.");
@@ -119,6 +129,13 @@
 
                 githubToken = new TextDecoder().decode(decrypted);
                 
+                // Validate Author
+                const authorName = await validateAuthor(username);
+                if (!authorName) {
+                     throw new Error("GitHub username not found in authors list.");
+                }
+                loggedInAuthorName = authorName;
+
                 // If successful, show editor
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('editor-screen').classList.remove('hidden');
@@ -131,9 +148,33 @@
 
             } catch (e) {
                 console.error(e);
-                errorMsg.innerText = "Incorrect password or invalid configuration.";
+                errorMsg.innerText = e.message || "Incorrect password or invalid configuration.";
             }
         };
+
+        async function validateAuthor(username) {
+             try {
+                // Fetch the generated JSON file instead of the raw YAML from GitHub API
+                // This works both locally (Jekyll serves it) and online (GitHub Pages serves it)
+                const response = await fetch('authors.json');
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch authors list: ${response.status} ${response.statusText}`);
+                }
+                
+                const authors = await response.json();
+                
+                // Check if username exists as a key in the authors object
+                if (authors && authors[username]) {
+                    return authors[username].name;
+                }
+                
+                return null;
+             } catch (e) {
+                 console.error("Error validating author:", e);
+                 throw e;
+             }
+        }
 
         window.loadPosts = async function() {
             const list = document.getElementById('posts-list');
@@ -234,19 +275,33 @@
                 const dateMatch = frontmatter.match(/date:\s*(.*)/);
                 currentDate = dateMatch ? dateMatch[1].trim() : new Date().toISOString();
 
+                // Extract collaborative
+                const collaborativeMatch = frontmatter.match(/collaborative:\s*(true|false)/);
+                const isCollaborative = collaborativeMatch ? collaborativeMatch[1] === 'true' : false;
+
                 // Set Editor
                 document.getElementById('post-title').value = title;
                 document.getElementById('post-categories').value = categories;
                 document.getElementById('post-tags').value = tags;
                 document.getElementById('current-authors').innerText = currentAuthors.join(', ') || "None";
-                document.getElementById('post-author').value = "";
+                document.getElementById('post-collaborative').checked = isCollaborative;
                 simplemde.value(body);
                 
                 // Set State
                 currentSha = data.sha;
                 currentPath = path;
                 
-                document.getElementById('form-title').innerText = "Edit Post: " + path.split('/').pop();
+                // Permission Check
+                if (currentAuthors.length > 0 && !currentAuthors.includes(loggedInAuthorName) && !isCollaborative) {
+                    document.getElementById('publish-btn').disabled = true;
+                    document.getElementById('publish-btn').style.display = 'none';
+                    document.getElementById('form-title').innerText = "View Post (Read Only): " + path.split('/').pop();
+                } else {
+                    document.getElementById('publish-btn').disabled = false;
+                    document.getElementById('publish-btn').style.display = 'inline-block';
+                    document.getElementById('form-title').innerText = "Edit Post: " + path.split('/').pop();
+                }
+
                 document.getElementById('publish-btn').innerText = "Update Post";
                 status.innerText = "";
 
@@ -260,8 +315,8 @@
             document.getElementById('post-title').value = '';
             document.getElementById('post-categories').value = '';
             document.getElementById('post-tags').value = '';
-            document.getElementById('post-author').value = '';
             document.getElementById('current-authors').innerText = "None";
+            document.getElementById('post-collaborative').checked = false;
             currentAuthors = [];
             simplemde.value('');
             currentSha = null;
@@ -276,7 +331,8 @@
             const title = document.getElementById('post-title').value;
             const categories = document.getElementById('post-categories').value;
             const tags = document.getElementById('post-tags').value;
-            const newAuthor = document.getElementById('post-author').value.trim();
+            const isCollaborative = document.getElementById('post-collaborative').checked;
+            const newAuthor = loggedInAuthorName;
             const body = simplemde.value();
             const btn = document.getElementById('publish-btn');
             const status = document.getElementById('status-msg');
@@ -287,7 +343,7 @@
             }
 
             if (!newAuthor) {
-                alert('Please enter your name (Author)');
+                alert('Error: Could not determine author name. Please log in again.');
                 return;
             }
 
@@ -326,6 +382,10 @@ date: ${dateToUse}
             if (currentAuthors.length > 0) {
                 const authorsStr = currentAuthors.map(a => `"${a}"`).join(', ');
                 frontmatter += `author: [${authorsStr}]\n`;
+            }
+
+            if (isCollaborative) {
+                frontmatter += `collaborative: true\n`;
             }
 
             frontmatter += `---`;
