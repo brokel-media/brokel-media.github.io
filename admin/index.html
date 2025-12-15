@@ -48,6 +48,26 @@
         </div>
 
         <div class="form-group">
+            <label>Categories (comma separated)</label>
+            <input type="text" id="post-categories" placeholder="Tech, Web Development">
+        </div>
+
+        <div class="form-group">
+            <label>Tags (comma separated)</label>
+            <input type="text" id="post-tags" placeholder="jekyll, tutorial">
+        </div>
+
+        <div class="form-group">
+            <label>Current Authors</label>
+            <div id="current-authors" style="padding: 0.5rem; background: #f6f8fa; border: 1px solid #d1d5da; border-radius: 4px; min-height: 1.5rem; color: #586069;">None</div>
+        </div>
+
+        <div class="form-group">
+            <label>Your Name (Author) *</label>
+            <input type="text" id="post-author" placeholder="Enter your name">
+        </div>
+
+        <div class="form-group">
             <label>Content</label>
             <textarea id="post-body"></textarea>
         </div>
@@ -65,6 +85,7 @@
         let currentSha = null;
         let currentPath = null;
         let currentDate = null;
+        let currentAuthors = [];
 
         // Repo Details
         // TODO: put these consts in a central file
@@ -188,12 +209,37 @@
                 const titleMatch = frontmatter.match(/title:\s*"(.*)"/) || frontmatter.match(/title:\s*(.*)/);
                 const title = titleMatch ? titleMatch[1] : "";
 
+                // Extract categories
+                const categoriesMatch = frontmatter.match(/categories:\s*\[(.*?)\]/);
+                const categories = categoriesMatch ? categoriesMatch[1] : "";
+
+                // Extract tags
+                const tagsMatch = frontmatter.match(/tags:\s*\[(.*?)\]/);
+                const tags = tagsMatch ? tagsMatch[1] : "";
+
+                // Extract authors
+                currentAuthors = [];
+                const authorMatch = frontmatter.match(/^author:\s*(.*)$/m);
+                if (authorMatch) {
+                    let val = authorMatch[1].trim();
+                    if (val.startsWith('[')) {
+                        val = val.substring(1, val.length - 1);
+                        currentAuthors = val.split(',').map(s => s.trim().replace(/^["']|["']$/g, ''));
+                    } else {
+                        currentAuthors = [val.replace(/^["']|["']$/g, '')];
+                    }
+                }
+
                 // Extract date
                 const dateMatch = frontmatter.match(/date:\s*(.*)/);
                 currentDate = dateMatch ? dateMatch[1].trim() : new Date().toISOString();
 
                 // Set Editor
                 document.getElementById('post-title').value = title;
+                document.getElementById('post-categories').value = categories;
+                document.getElementById('post-tags').value = tags;
+                document.getElementById('current-authors').innerText = currentAuthors.join(', ') || "None";
+                document.getElementById('post-author').value = "";
                 simplemde.value(body);
                 
                 // Set State
@@ -212,6 +258,11 @@
 
         window.resetEditor = function() {
             document.getElementById('post-title').value = '';
+            document.getElementById('post-categories').value = '';
+            document.getElementById('post-tags').value = '';
+            document.getElementById('post-author').value = '';
+            document.getElementById('current-authors').innerText = "None";
+            currentAuthors = [];
             simplemde.value('');
             currentSha = null;
             currentPath = null;
@@ -223,12 +274,20 @@
 
         window.publish = async function() {
             const title = document.getElementById('post-title').value;
+            const categories = document.getElementById('post-categories').value;
+            const tags = document.getElementById('post-tags').value;
+            const newAuthor = document.getElementById('post-author').value.trim();
             const body = simplemde.value();
             const btn = document.getElementById('publish-btn');
             const status = document.getElementById('status-msg');
 
             if (!title || !body) {
                 alert('Please fill in title and content');
+                return;
+            }
+
+            if (!newAuthor) {
+                alert('Please enter your name (Author)');
                 return;
             }
 
@@ -248,11 +307,30 @@
             }
 
             // Create Frontmatter
-            const fileContent = `---
+            let frontmatter = `---
 layout: post
 title: "${title.replace(/"/g, '\\"')}"
 date: ${dateToUse}
----
+`;
+            if (categories && categories.trim() !== "") {
+                frontmatter += `categories: [${categories}]\n`;
+            }
+            if (tags && tags.trim() !== "") {
+                frontmatter += `tags: [${tags}]\n`;
+            }
+
+            // Handle Authors
+            if (!currentAuthors.includes(newAuthor)) {
+                currentAuthors.push(newAuthor);
+            }
+            if (currentAuthors.length > 0) {
+                const authorsStr = currentAuthors.map(a => `"${a}"`).join(', ');
+                frontmatter += `author: [${authorsStr}]\n`;
+            }
+
+            frontmatter += `---`;
+
+            const fileContent = `${frontmatter}
 
 ${body}`;
 
