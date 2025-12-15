@@ -5,7 +5,7 @@ date: 2025-12-14T23:56:42.738Z
 author: ["lucaa2000"]
 ---
 
-Hello and welcome to the website we own together! Have fun :)
+Hello and welcome to the website we own together!! Have fun :)
 
 ```
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
