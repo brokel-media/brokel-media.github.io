@@ -4,7 +4,7 @@ title: "Sächsische Dampfschiffgesellschaft"
 date: 2025-12-14T22:26:04.208Z
 categories: [Alltag]
 tags: [dresden, german]
-author: ["Quirin"]
+author: ["Chackssoli"]
 ---
 
 Hallo liebe Freunde, 

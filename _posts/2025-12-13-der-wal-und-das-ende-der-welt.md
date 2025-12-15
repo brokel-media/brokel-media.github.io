@@ -4,7 +4,7 @@ title: "Der Wal und das Ende der Welt"
 date: 2025-12-14 21:09 +0100
 categories: [books]
 tags: [book, german]
-author: ["Luca"]
+author: ["lucaa2000"]
 ---
 
 Der Wal und das Ende der Welt von John Ironmonger, einer der ersten Romane die ich gelesen habe. Das Buch wurde mir vor ca. zwei Jahren von meinem Freund und damaligen Mitbewohner Roman empfohlen. Ja, das ist kein schlechter Wortwitz.
