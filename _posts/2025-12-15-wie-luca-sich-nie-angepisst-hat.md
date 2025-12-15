@@ -4,7 +4,7 @@ title: "Wie luca sich nie angepisst hat"
 date: 2025-12-15T13:52:18.704Z
 categories: [Geschichten]
 tags: [Verrrat, Lügen, Luca]
-author: ["Chackssoli (Quirin)"]
+author: ["Chackssoli"]
 ---
 
 # 2021 · Budapest · Abends
