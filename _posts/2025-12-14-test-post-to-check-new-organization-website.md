@@ -2,9 +2,9 @@
 layout: post
 title: "Test post to check new organization website"
 date: 2025-12-14T23:56:42.738Z
-autor: ["admin"]
+author: ["lucaa2000"]
+collaborative: true
 ---
-
 
 Hello and welcome to the website we own together! Have fun :)
 
