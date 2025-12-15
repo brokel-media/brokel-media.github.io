@@ -3,7 +3,7 @@ layout: post
 title: "Sächsische Dampfschiffgesellschaft"
 date: 2025-12-14T22:26:04.208Z
 categories: [Alltag]
-tags: [Dresden]
+tags: [dresden, german]
 author: ["Quirin"]
 ---
 
