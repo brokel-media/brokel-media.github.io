@@ -1,13 +1,12 @@
 ---
 layout: post
-title: "A short breakdown of Compresses Energy Batteries"
+title: "A short breakdown of Compressed Air Batteries"
 date: 2025-12-17T11:11:59.360Z
 categories: [Energy Technologies]
 tags: [Energy, Renewables, Energy Storage]
 author: ["RomanMazur-alt"]
 collaborative: true
 ---
-
 
 # Compressed Air Batteries
 Recently I once again stumbled over some of the problems that grids, consisting mostly of renewable energy, pose. Almost all these problems, however, could be resolved by implementing various types of energy storage. And a lot is being done here already!
