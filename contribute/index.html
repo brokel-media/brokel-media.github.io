@@ -159,25 +159,49 @@
         };
 
         async function validateAuthor(username) {
+             // Try to load the pre-generated JSON file first (works for local and many hosted sites)
              try {
-                // Fetch the generated JSON file instead of the raw YAML from GitHub API
-                // This works both locally (Jekyll serves it) and online (GitHub Pages serves it)
-                const response = await fetch('authors.json');
-                
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch authors list: ${response.status} ${response.statusText}`);
+                const response = await fetch('authors.json', { cache: 'no-store' });
+
+                if (response && response.ok) {
+                    const text = await response.text();
+
+                    try {
+                        const authors = JSON.parse(text);
+                        if (authors && authors[username]) return username;
+                    } catch (parseErr) {
+                        // authors.json may be served as HTML or unprocessed Liquid/front-matter on some hosts.
+                        console.warn('Could not parse authors.json, falling back to GitHub API', parseErr);
+                    }
+                } else {
+                    console.warn('authors.json not available locally or returned non-OK status', response && response.status);
                 }
-                
-                const authors = await response.json();
-                
-                // Check if username exists as a key in the authors object
-                if (authors && authors[username]) {
-                    return username;
+
+                // Fallback: fetch the YAML data from the repository via GitHub API (requires the decrypted token)
+                if (!githubToken) {
+                    // No token available to fetch from GitHub API — report that validation failed
+                    return null;
                 }
-                
+
+                const apiResp = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/_data/authors.yml`, {
+                    headers: { 'Authorization': `Bearer ${githubToken}`, 'Accept': 'application/vnd.github.v3.raw' }
+                });
+
+                if (!apiResp.ok) {
+                    console.warn('GitHub API fetch for authors.yml failed', apiResp.status, apiResp.statusText);
+                    return null;
+                }
+
+                const yamlText = await apiResp.text();
+
+                // Simple check: look for a top-level YAML key that matches the username (e.g. "username:")
+                const esc = username.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
+                const keyRegex = new RegExp('^' + esc + '\\s*:', 'm');
+                if (keyRegex.test(yamlText)) return username;
+
                 return null;
              } catch (e) {
-                 console.error("Error validating author:", e);
+                 console.error('Error validating author:', e);
                  throw e;
              }
         }
