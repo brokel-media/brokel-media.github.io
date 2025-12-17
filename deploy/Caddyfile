@@ -1,0 +1,8 @@
+http://brokel.local {
+  root * /srv
+  file_server
+}
+
+http://comments.local {
+  reverse_proxy remark42:8080
+}
