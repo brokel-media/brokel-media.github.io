@@ -8,7 +8,7 @@ author: ["RomanMazur-alt"]
 collaborative: true
 ---
 
-# Compressed Air Batteries
+![Screenshot_Grid Support Distribution.png](/assets/img/uploads/1766054364533-Screenshot_Grid_Support_Distribution.png)# Compressed Air Batteries
 Recently I once again stumbled over some of the problems that grids, consisting mostly of renewable energy, pose. Almost all these problems, however, could be resolved by implementing various types of energy storage. And a lot is being done here already!
 
 In Germany, for example, 24 GWh of battery capacity was installed in 2025. This would be enough to provide electricity to roughly 100,000 households for one month, or power Oberriexingen for 4 years.  
